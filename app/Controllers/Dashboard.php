@@ -137,7 +137,7 @@ class Dashboard extends BaseController
     }
 
     // ==========================================
-    // PRIVILEGE: CETAK LAPORAN BULANAN (HRD & PIMPINAN)
+    // PRIVILEGE: CETAK LAPORAN BULANAN (PDF)
     // ==========================================
     public function cetak_laporan()
     {
@@ -185,7 +185,7 @@ class Dashboard extends BaseController
             ];
         }
 
-        $nama_bulan = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+        $nama_bulan = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'October','11'=>'November','12'=>'Desember'];
 
         $data = [
             'periode_teks'  => $nama_bulan[$bulan] . ' ' . $tahun,
@@ -198,7 +198,7 @@ class Dashboard extends BaseController
     }
 
     // ==========================================
-    // EXCLUSIVE PRIVILEGE: CETAK LAPORAN HARIAN (PIMPINAN ONLY)
+    // EXCLUSIVE PRIVILEGE: CETAK LAPORAN HARIAN
     // ==========================================
     public function cetak_laporan_harian()
     {
@@ -210,11 +210,9 @@ class Dashboard extends BaseController
         $tanggal = $this->request->getPost('tanggal') ?? date('Y-m-d');
         $absensiModel = new AbsensiModel();
 
-        // Ambil riwayat kehadiran lengkap pada hari spesifik tersebut
         $rekap_absensi = $absensiModel->select('absensi.*, karyawan.nama, karyawan.nik')
                                       ->join('karyawan', 'karyawan.id_karyawan = absensi.id_karyawan')
-                                      ->where('tanggal', $tanggal)
-                                      ->findAll();
+                                      ->where('tanggal', $tanggal)->findAll();
 
         $data = [
             'tanggal_teks'  => date('d F Y', strtotime($tanggal)),
@@ -223,5 +221,63 @@ class Dashboard extends BaseController
         ];
 
         return view('dashboard/cetak_laporan_harian', $data);
+    }
+
+    // ==========================================
+    // FITUR AMUNISI BARU: EXPORT DATA KE EXCEL
+    // ==========================================
+    public function export_excel()
+    {
+        $session = session();
+        if (!in_array($session->get('role'), ['Pimpinan', 'HRD'])) {
+            return redirect()->to('/');
+        }
+
+        $bulan = $this->request->getPost('bulan');
+        $tahun = $this->request->getPost('tahun');
+        $periode = $tahun . '-' . $bulan; 
+
+        $karyawanModel = new \App\Models\KaryawanModel();
+        $absensiModel  = new AbsensiModel();
+        $cutiModel     = new CutiModel();
+
+        $semua_karyawan = $karyawanModel->where('divisi', 'Karyawan')->findAll();
+        $data_laporan = [];
+
+        foreach ($semua_karyawan as $k) {
+            $hadir = $absensiModel->where('id_karyawan', $k['id_karyawan'])->like('tanggal', $periode, 'after')->countAllResults();
+            $terlambat = $absensiModel->where('id_karyawan', $k['id_karyawan'])->like('tanggal', $periode, 'after')->where('jam_masuk >', '08:00:00')->countAllResults();
+            $cuti = $cutiModel->selectSum('lama_cuti')->where('id_karyawan', $k['id_karyawan'])->where('status', 'Diterima')->like('tanggal_mulai_cuti', $periode, 'after')->first();
+            $jml_cuti = $cuti['lama_cuti'] ?? 0;
+            
+            $cuti_total = $cutiModel->selectSum('lama_cuti')->where('id_karyawan', $k['id_karyawan'])->whereIn('status', ['Pending', 'Diterima'])->first();
+            $sisa_cuti = 12 - ($cuti_total['lama_cuti'] ?? 0);
+
+            $alfa = 22 - ($hadir + $jml_cuti);
+            if ($alfa < 0) $alfa = 0; 
+
+            $kpi = round(($hadir / 22) * 100);
+            if ($kpi > 100) $kpi = 100;
+
+            $data_laporan[] = [
+                'nik'       => $k['nik'],
+                'nama'      => $k['nama'],
+                'hadir'     => $hadir,
+                'terlambat' => $terlambat,
+                'cuti'      => $jml_cuti,
+                'alfa'      => $alfa,
+                'kpi'       => $kpi,
+                'sisa_cuti' => $sisa_cuti 
+            ];
+        }
+
+        $nama_bulan = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
+
+        $data = [
+            'periode_teks' => $nama_bulan[$bulan] . ' ' . $tahun,
+            'data_laporan' => $data_laporan
+        ];
+
+        return view('dashboard/export_excel', $data);
     }
 }
