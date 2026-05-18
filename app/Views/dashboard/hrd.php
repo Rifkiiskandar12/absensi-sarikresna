@@ -24,10 +24,22 @@
             </div>
         <?php endif; ?>
 
+        <?php if(!empty($peringatan_dini)): ?>
+            <div class="bg-red-100 border-l-4 border-red-600 text-red-800 p-4 mb-6 shadow-sm rounded-xl flex items-start gap-3">
+                <span class="text-2xl">⚠️</span>
+                <div>
+                    <h3 class="font-bold">Peringatan Dini Sistem!</h3>
+                    <p class="text-sm mt-1">Sistem mendeteksi karyawan berikut tidak absen dan tidak memiliki status cuti aktif selama 3 hari berturut-turut: 
+                        <b class="bg-red-200 px-2 py-0.5 rounded"><?= implode(', ', $peringatan_dini) ?></b>. Harap segera lakukan tindak lanjut.
+                    </p>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <div class="lg:col-span-1">
-                <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-blue-600 sticky top-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-blue-600">
                     <h2 class="font-bold text-xl text-slate-800 mb-4">Tambah Karyawan Baru</h2>
                     <form action="<?= base_url('hrd/simpan_karyawan') ?>" method="POST">
                         <?= csrf_field() ?>
@@ -59,6 +71,34 @@
                         </button>
                     </form>
                 </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-emerald-500 mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-lg text-slate-800">KPI Kehadiran Bulanan</h2>
+                        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider"><?= date('F Y') ?></span>
+                    </div>
+                    <div class="space-y-4">
+                        <?php if(empty($kpi_karyawan)): ?>
+                            <p class="text-sm text-slate-400 italic text-center py-4">Belum ada data metrik kehadiran.</p>
+                        <?php else: ?>
+                            <?php foreach($kpi_karyawan as $kpi): ?>
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span><?= esc($kpi['nama']) ?></span>
+                                    <span><?= $kpi['hadir'] ?>/22 Hari (<?= $kpi['kpi'] ?>%)</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                    <?php 
+                                        $warna_bar = $kpi['kpi'] >= 80 ? 'bg-emerald-500' : ($kpi['kpi'] >= 50 ? 'bg-amber-500' : 'bg-red-500');
+                                    ?>
+                                    <div class="<?= $warna_bar ?> h-full rounded-full transition-all duration-500" style="width: <?= $kpi['kpi'] ?>%"></div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-6">
