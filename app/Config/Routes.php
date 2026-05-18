@@ -20,3 +20,5 @@ $routes->get('admin/toggle_status/(:num)/(:num)', 'Admin::toggle_status/$1/$2');
 $routes->get('admin/reset_karyawan/(:num)', 'Admin::reset_karyawan/$1');
 $routes->get('admin/reset_manajemen/(:num)', 'Admin::reset_manajemen/$1');
 $routes->post('admin/simpan_karyawan', 'Admin::simpan_karyawan');
+$routes->post('dashboard/cetak_laporan', 'Dashboard::cetak_laporan');
+$routes->post('dashboard/cetak_laporan_harian', 'Dashboard::cetak_laporan_harian');
