@@ -23,3 +23,6 @@ $routes->post('admin/simpan_karyawan', 'Admin::simpan_karyawan');
 $routes->post('dashboard/cetak_laporan', 'Dashboard::cetak_laporan');
 $routes->post('dashboard/cetak_laporan_harian', 'Dashboard::cetak_laporan_harian');
 $routes->post('dashboard/export_excel', 'Dashboard::export_excel');
+$routes->post('dashboard/update_shift', 'Dashboard::update_shift');
+$routes->post('dashboard/update_karyawan', 'Dashboard::update_karyawan');
+$routes->post('dashboard/simpan_pengumuman', 'Dashboard::simpan_pengumuman');

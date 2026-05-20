@@ -17,6 +17,20 @@
     </nav>
 
     <div class="max-w-7xl mx-auto p-6">
+        <?php if(!empty($pengumuman_terbaru)): ?>
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-6 shadow-xl text-white mb-8 relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="bg-white/20 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">📢 Info HRD</span>
+                        <span class="text-xs text-blue-200 font-medium"><?= date('d F Y, H:i', strtotime($pengumuman_terbaru['tanggal_posting'])) ?> | Oleh: <?= esc($pengumuman_terbaru['pembuat']) ?></span>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-extrabold mb-2 tracking-tight"><?= esc($pengumuman_terbaru['judul']) ?></h2>
+                    <p class="text-blue-50 text-sm md:text-base leading-relaxed max-w-4xl"><?= nl2br(esc($pengumuman_terbaru['isi_pengumuman'])) ?></p>
+                </div>
+                <div class="absolute -right-8 -bottom-10 text-9xl opacity-10 drop-shadow-2xl select-none">🔔</div>
+            </div>
+        <?php endif; ?>
+
         <?php if(session()->getFlashdata('pesan')): ?>
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 shadow-sm font-semibold">
                 <?= session()->getFlashdata('pesan') ?>

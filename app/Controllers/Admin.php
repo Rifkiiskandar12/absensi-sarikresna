@@ -42,13 +42,25 @@ class Admin extends BaseController
     {
         $karyawanModel = new \App\Models\KaryawanModel();
         
+        // Cek apakah memilih membuat divisi baru kustom
+        $divisi = $this->request->getPost('divisi');
+        if ($divisi === 'NEW_DIVISION') {
+            $divisi = $this->request->getPost('divisi_baru'); // Tangkap input ketik manual
+        }
+
+        $shift_pilihan = $this->request->getPost('shift');
+        $jam_masuk  = ($shift_pilihan == 'Siang') ? '13:00:00' : '08:00:00';
+        $jam_pulang = ($shift_pilihan == 'Siang') ? '21:00:00' : '17:00:00';
+        
         $data_simpan = [
-            'nik'          => $this->request->getPost('nik'),
-            'nama'         => $this->request->getPost('nama'),
-            'username'     => $this->request->getPost('username'),
-            'password'     => $this->request->getPost('password'),
-            'divisi'       => $this->request->getPost('divisi'),
-            'status_aktif' => 1 // Langsung aktif saat dibuat
+            'nik'              => $this->request->getPost('nik'),
+            'nama'             => $this->request->getPost('nama'),
+            'username'         => $this->request->getPost('username'),
+            'password'         => $this->request->getPost('password'),
+            'divisi'           => $divisi, // Hasil saringan divisi dinamis
+            'jam_masuk_shift'  => $jam_masuk,
+            'jam_pulang_shift' => $jam_pulang,
+            'status_aktif'     => 1 
         ];
 
         $karyawanModel->insert($data_simpan);

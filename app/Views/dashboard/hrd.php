@@ -9,9 +9,7 @@
 <body class="bg-slate-50 font-sans relative">
 
     <nav class="bg-blue-800 text-white p-4 shadow-md flex justify-between items-center border-b-4 border-indigo-400">
-        <div class="font-bold text-xl tracking-wide flex items-center gap-2">
-            <span>Panel HRD - Sari Kresna</span>
-        </div>
+        <div class="font-bold text-xl tracking-wide flex items-center gap-2"><span>Panel HRD - Sari Kresna</span></div>
         <div class="flex items-center gap-4">
             <span class="font-medium text-sm">Halo, <?= esc($username); ?> (<?= esc($role); ?>)</span>
             <a href="<?= base_url('auth/logout') ?>" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-xs font-bold transition">Logout</a>
@@ -21,8 +19,9 @@
     <div class="max-w-7xl mx-auto p-6 mt-6">
         
         <?php if(session()->getFlashdata('pesan')): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 font-semibold shadow-sm italic">
-                ✅ <?= session()->getFlashdata('pesan') ?>
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 font-semibold shadow-sm italic flex justify-between items-center">
+                <span>✅ <?= session()->getFlashdata('pesan') ?></span>
+                <button onclick="this.parentElement.style.display='none'" class="text-green-900 font-bold">X</button>
             </div>
         <?php endif; ?>
 
@@ -58,13 +57,8 @@
                 <select name="tahun" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 focus:ring-blue-500 font-semibold" required>
                     <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
                 </select>
-                
-                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-1.5 shadow-sm">
-                    🖨️ PDF
-                </button>
-                <button type="submit" formaction="<?= base_url('dashboard/export_excel') ?>" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-1.5 shadow-sm">
-                    📊 Excel
-                </button>
+                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-1.5 shadow-sm">🖨️ PDF</button>
+                <button type="submit" formaction="<?= base_url('dashboard/export_excel') ?>" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-1.5 shadow-sm">📊 Excel</button>
             </form>
         </div>
 
@@ -74,16 +68,30 @@
                     <h2 class="font-bold text-xl text-slate-800 mb-4">Tambah Karyawan Baru</h2>
                     <form action="<?= base_url('hrd/simpan_karyawan') ?>" method="POST">
                         <?= csrf_field() ?>
-                        <div class="mb-3"><input type="text" name="nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="NIK (Contoh: KRY-004)" required></div>
-                        <div class="mb-3"><input type="text" name="nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Nama Lengkap" required></div>
+                        <div class="mb-3"><input type="text" name="nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="NIK (Contoh: KRY-004)" required></div>
+                        <div class="mb-3"><input type="text" name="nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Nama Lengkap" required></div>
+                        
                         <div class="mb-3">
-                            <select name="divisi" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="Karyawan">Divisi Operasional (Karyawan)</option>
-                                <option value="Admin">Admin Sistem</option>
+                            <select name="divisi" onchange="checkDivisiKustom(this, 'box_divisi_add', 'input_divisi_add')" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold text-slate-700" required>
+                                <option value="" disabled selected>-- Pilih Departemen --</option>
+                                <?php foreach($daftar_divisi as $div): ?>
+                                    <option value="<?= esc($div) ?>"><?= esc($div) ?></option>
+                                <?php endforeach; ?>
+                                <option value="NEW_DIVISION" class="font-bold text-blue-600 bg-blue-50">➕ Tambah Divisi Baru...</option>
                             </select>
                         </div>
-                        <div class="mb-3"><input type="text" name="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Username Login" required></div>
-                        <div class="mb-5"><input type="password" name="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Password Sementara" required></div>
+                        <div class="mb-3 hidden" id="box_divisi_add">
+                            <input type="text" name="divisi_baru" id="input_divisi_add" class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg text-sm" placeholder="Ketik Nama Divisi Baru...">
+                        </div>
+
+                        <div class="mb-3">
+                            <select name="shift" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold text-slate-700">
+                                <option value="Pagi">☀️ Shift Pagi (08:00 - 17:00)</option>
+                                <option value="Siang">🌆 Shift Siang (13:00 - 21:00)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3"><input type="text" name="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Username Login" required></div>
+                        <div class="mb-5"><input type="password" name="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Password" required></div>
                         <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-md">Simpan Data</button>
                     </form>
                 </div>
@@ -97,19 +105,20 @@
                         <?php if(empty($statistik_karyawan)): ?>
                             <p class="text-sm text-slate-400 italic text-center py-4">Belum ada data metrik kehadiran.</p>
                         <?php else: ?>
-                            <?php foreach($statistik_karyawan as $k): ?>
-                            <div class="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                                <div class="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                                    <span><?= esc($k['nama']) ?></span>
-                                    <span class="<?= $k['sisa_cuti'] <= 2 ? 'text-red-500' : 'text-blue-600' ?>">Cuti: <?= $k['sisa_cuti'] ?></span>
-                                </div>
-                                <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                                    <div class="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                                        <?php $warna_bar = $k['kpi'] >= 80 ? 'bg-emerald-500' : ($k['kpi'] >= 50 ? 'bg-amber-500' : 'bg-red-500'); ?>
-                                        <div class="<?= $warna_bar ?> h-full rounded-full" style="width: <?= $k['kpi'] ?>%"></div>
+                            <?php foreach($statistik_karyawan as $k): 
+                                $isPagi = ($k['jam_masuk_shift'] == '08:00:00');
+                            ?>
+                            <div class="border-b border-slate-100 pb-3 last:border-0 last:pb-0 flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                        <span><?= esc($k['nama']) ?></span>
+                                        <span class="text-xs text-slate-400 font-normal"><?= esc($k['divisi']) ?></span>
                                     </div>
-                                    <span>KPI: <?= $k['kpi'] ?>%</span>
+                                    <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                        <span>KPI: <?= $k['kpi'] ?>% | Cuti: <span class="<?= $k['sisa_cuti'] <= 2 ? 'text-red-500' : 'text-blue-600' ?>"><?= $k['sisa_cuti'] ?></span></span>
+                                    </div>
                                 </div>
+                                <button onclick="bukaModalEdit(<?= $k['id_karyawan'] ?>, '<?= esc($k['nik']) ?>', '<?= esc($k['nama']) ?>', '<?= esc($k['divisi']) ?>', '<?= $isPagi ? 'Pagi' : 'Siang' ?>', '<?= esc($k['username']) ?>')" class="ml-2 text-[10px] bg-slate-100 hover:bg-amber-100 text-amber-700 font-bold px-2 py-1.5 rounded border border-slate-200 transition">✏️ Edit</button>
                             </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -127,7 +136,7 @@
                                     <th class="p-3 border-b">Karyawan</th>
                                     <th class="p-3 border-b">Waktu Masuk</th>
                                     <th class="p-3 border-b">Waktu Pulang</th>
-                                    <th class="p-3 border-b text-center">Detail Lokasi</th>
+                                    <th class="p-3 border-b text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -142,7 +151,7 @@
                                         </td>
                                         <td class="p-3"><div class="text-blue-600 font-bold"><?= $row['jam_masuk']; ?></div></td>
                                         <td class="p-3"><div class="text-orange-600 font-bold"><?= $row['jam_keluar'] ?? '--:--:--'; ?></div></td>
-                                        <td class="p-3 text-center"><?= $row['lokasi_masuk'] ? '<span class="text-xs">📍 Aktif</span>' : '-' ?></td>
+                                        <td class="p-3 text-center text-xs text-slate-400">Terpantau</td>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -173,8 +182,8 @@
                                         <td class="p-3 border-b text-xs font-medium"><?= $c['tanggal_mulai_cuti']; ?></td>
                                         <td class="p-3 border-b text-[11px] italic text-slate-600">"<?= esc($c['alasan_cuti']); ?>"</td>
                                         <td class="p-3 border-b text-center flex gap-1 justify-center">
-                                            <a href="<?= base_url('cuti/setuju/' . $c['id_cuti']); ?>" class="bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold">ACC</a>
-                                            <a href="<?= base_url('cuti/tolak/' . $c['id_cuti']); ?>" class="bg-red-600 text-white px-3 py-1.5 rounded text-[10px] font-bold">TOLAK</a>
+                                            <a href="<?= base_url('cuti/setuju/' . $c['id_cuti']); ?>" class="bg-green-600 text-white px-3 py-1.5 rounded text-[10px] font-bold shadow-sm">ACC</a>
+                                            <a href="<?= base_url('cuti/tolak/' . $c['id_cuti']); ?>" class="bg-red-600 text-white px-3 py-1.5 rounded text-[10px] font-bold shadow-sm">TOLAK</a>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -183,8 +192,97 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-xl shadow-sm border border-indigo-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-lg text-indigo-900">📢 Buat Pengumuman Global</h2>
+                        <?php if(!empty($pengumuman_terbaru)): ?>
+                            <span class="text-[10px] bg-indigo-100 text-indigo-600 font-bold px-2 py-1 rounded">Update Terakhir: <?= date('d M Y', strtotime($pengumuman_terbaru['tanggal_posting'])) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <form action="<?= base_url('dashboard/simpan_pengumuman') ?>" method="POST" class="space-y-3">
+                        <?= csrf_field() ?>
+                        <input type="text" name="judul" class="w-full px-4 py-2 border border-indigo-200 rounded-lg text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Judul Pengumuman (Misal: Libur Nasional Idul Fitri)" required>
+                        <textarea name="isi_pengumuman" rows="3" class="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tuliskan isi pesan secara detail di sini..." required></textarea>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition w-full md:w-auto">🚀 Broadcast ke Karyawan</button>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
+
+    <div id="modalEdit" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden relative">
+            <div class="bg-amber-500 p-4 flex justify-between items-center">
+                <h3 class="font-black text-slate-900">✏️ Edit Data Karyawan</h3>
+                <button onclick="tutupModalEdit()" class="text-slate-900 hover:text-white font-bold text-lg leading-none">×</button>
+            </div>
+            <form action="<?= base_url('dashboard/update_karyawan') ?>" method="POST" class="p-6">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
+                    <input type="text" name="nik" id="edit_nik" class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
+                    <input type="text" name="nama" id="edit_nama" class="w-full px-3 py-2 border rounded-lg text-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Divisi / Departemen</label>
+                    <select name="divisi" id="edit_divisi" onchange="checkDivisiKustom(this, 'box_divisi_edit', 'input_divisi_edit')" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold text-slate-700" required>
+                        <?php foreach($daftar_divisi as $div): ?>
+                            <option value="<?= esc($div) ?>"><?= esc($div) ?></option>
+                        <?php endforeach; ?>
+                        <option value="NEW_DIVISION" class="font-bold text-amber-600 bg-amber-50">➕ Tambah Divisi Baru...</option>
+                    </select>
+                </div>
+                <div class="mb-3 hidden" id="box_divisi_edit">
+                    <input type="text" name="divisi_baru" id="input_divisi_edit" class="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm" placeholder="Ketik nama divisi baru...">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Jadwal Shift Operasional</label>
+                    <select name="shift" id="edit_shift" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold text-slate-700">
+                        <option value="Pagi">☀️ Shift Pagi (08:00 - 17:00)</option>
+                        <option value="Siang">🌆 Shift Siang (13:00 - 21:00)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Username Login</label>
+                    <input type="text" name="username" id="edit_username" class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold text-red-500 mb-1 uppercase tracking-wide">Password Baru (Kosongkan jika tetap)</label>
+                    <input type="password" name="password" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="••••••••">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 transition shadow-lg">Simpan Perubahan</button>
+                    <button type="button" onclick="tutupModalEdit()" class="px-4 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function checkDivisiKustom(selectElement, boxId, inputId) {
+            const box = document.getElementById(boxId); const input = document.getElementById(inputId);
+            if (selectElement.value === 'NEW_DIVISION') { box.classList.remove('hidden'); input.required = true; input.focus(); } 
+            else { box.classList.add('hidden'); input.required = false; input.value = ''; }
+        }
+        function bukaModalEdit(id, nik, nama, divisi, shift, username) {
+            document.getElementById('edit_id_karyawan').value = id; 
+            document.getElementById('edit_nik').value = nik; 
+            document.getElementById('edit_nama').value = nama;
+            document.getElementById('edit_divisi').value = divisi; 
+            document.getElementById('edit_shift').value = shift; 
+            document.getElementById('edit_username').value = username;
+            
+            // Reset state custom division if any
+            document.getElementById('edit_divisi').dispatchEvent(new Event('change'));
+            document.getElementById('modalEdit').classList.remove('hidden');
+        }
+        function tutupModalEdit() { document.getElementById('modalEdit').classList.add('hidden'); }
+    </script>
 </body>
 </html>
