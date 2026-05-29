@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use App\Models\KaryawanModel;
-use App\Models\HrdModel;
 
 class Auth extends BaseController
 {
@@ -19,29 +18,26 @@ class Auth extends BaseController
         $password = $this->request->getPost('password');
 
         $karyawanModel = new KaryawanModel();
-        $hrdModel = new HrdModel();
 
-        // Cek di tabel HRD/Admin/Pimpinan dulu
-        $userHrd = $hrdModel->where('username', $username)->first();
-        if ($userHrd && $password == $userHrd['password']) {
+        // Sistem HANYA mencari di satu tabel terpusat (Karyawan)
+        $user = $karyawanModel->where('username', $username)->first();
+
+        if ($user && $password == $user['password']) {
+            
+            // Keamanan tambahan: Cek apakah akun di-suspend
+            if ($user['status_aktif'] == 0) {
+                $session->setFlashdata('msg', 'Akun Anda sedang ditangguhkan oleh Admin!');
+                return redirect()->to('/');
+            }
+
+            // Set Session langsung mengambil dari ID dan Role yang ada di tabel
             $session->set([
-                'id_user'  => $userHrd['id_hrd'],
-                'username' => $userHrd['username'],
-                'role'     => $userHrd['role'],
+                'id_user'    => $user['id_karyawan'],
+                'username'   => $user['username'],
+                'role'       => $user['role'], // Karyawan, HRD, Pimpinan, atau Admin
                 'isLoggedIn' => true
             ]);
-            return redirect()->to('/dashboard'); // Nanti kita buat dashboard-nya
-        }
-
-        // Jika tidak ada, cek di tabel Karyawan
-        $userKaryawan = $karyawanModel->where('username', $username)->first();
-        if ($userKaryawan && $password == $userKaryawan['password']) {
-            $session->set([
-                'id_user'  => $userKaryawan['id_karyawan'],
-                'username' => $userKaryawan['username'],
-                'role'     => 'Karyawan',
-                'isLoggedIn' => true
-            ]);
+            
             return redirect()->to('/dashboard');
         }
 
@@ -52,8 +48,7 @@ class Auth extends BaseController
 
     public function logout()
     {
-        $session = session();
-        $session->destroy();
+        session()->destroy();
         return redirect()->to('/');
     }
 }

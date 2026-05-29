@@ -21,6 +21,40 @@
 
     <div class="max-w-7xl mx-auto p-6 mt-6">
 
+        <!-- ========================================== -->
+        <!-- WIDGET ABSENSI MANDIRI (SAMA 100% DGN KARYAWAN) -->
+        <!-- ========================================== -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-blue-600 mb-8 max-w-2xl">
+            <?php if (!$absen_hari_ini): ?>
+                <h2 class="font-bold text-lg mb-4">📸 Absen Masuk (Mandiri Pimpinan)</h2>
+                <div class="aspect-video bg-slate-200 rounded-xl overflow-hidden mb-4"><video id="kamera" autoplay class="w-full h-full object-cover"></video></div>
+                <p id="status_lokasi" class="text-xs text-amber-600 mb-4 font-bold italic">📍 Mencari koordinat GPS...</p>
+                <form id="form_absen" action="<?= base_url('absensi/proses_masuk') ?>" method="POST">
+                    <input type="hidden" id="foto" name="foto_masuk">
+                    <input type="hidden" id="lokasi" name="lokasi_masuk">
+                    <button type="button" id="btn_absen" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg transition">Ambil Foto & Absen Masuk</button>
+                </form>
+
+            <?php elseif ($absen_hari_ini['jam_keluar'] == null): ?>
+                <h2 class="font-bold text-lg mb-4">📸 Absen Pulang (Mandiri Pimpinan)</h2>
+                <div class="mb-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-lg italic">Anda masuk jam: <b><?= $absen_hari_ini['jam_masuk'] ?></b></div>
+                <div class="aspect-video bg-slate-200 rounded-xl overflow-hidden mb-4"><video id="kamera" autoplay class="w-full h-full object-cover"></video></div>
+                <p id="status_lokasi" class="text-xs text-amber-600 mb-4 font-bold italic">📍 Mencari koordinat GPS...</p>
+                <form id="form_absen" action="<?= base_url('absensi/proses_keluar') ?>" method="POST">
+                    <input type="hidden" id="foto" name="foto_keluar">
+                    <input type="hidden" id="lokasi" name="lokasi_keluar">
+                    <button type="button" id="btn_absen" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 shadow-lg transition">Ambil Foto & Absen Pulang</button>
+                </form>
+
+            <?php else: ?>
+                <div class="text-center py-10">
+                    <span class="text-5xl">✅</span>
+                    <h2 class="font-bold text-xl mt-4">Absensi Hari Ini Selesai</h2>
+                    <p class="text-slate-500 text-sm">Terima kasih atas dedikasi Anda hari ini!</p>
+                </div>
+            <?php endif; ?>
+        </div>
+
         <?php if(session()->getFlashdata('pesan')): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 font-semibold shadow-sm italic flex justify-between items-center">
                 <span>✅ <?= session()->getFlashdata('pesan') ?></span>
@@ -149,7 +183,6 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <?php foreach($daftar_karyawan as $k): 
-                                // Deteksi Shift dari Jam Masuk (08:00 = Pagi, 13:00 = Siang)
                                 $isPagi = ($k['jam_masuk_shift'] == '08:00:00');
                                 $namaShift = $isPagi ? 'Shift Pagi' : 'Shift Siang';
                                 $jamShift = $isPagi ? '(08:00 - 17:00)' : '(13:00 - 21:00)';
@@ -221,9 +254,33 @@
         }
     </script>
     
+    <!-- ========================================== -->
+    <!-- SCRIPT KAMERA & GPS (SAMA 100% DGN KARYAWAN) -->
+    <!-- ========================================== -->
+    <script>
+        const btnAbsen = document.getElementById('btn_absen');
+        if (btnAbsen) {
+            const video = document.getElementById('kamera');
+            const statusLokasi = document.getElementById('status_lokasi');
+            navigator.mediaDevices.getUserMedia({ video: true }).then(s => video.srcObject = s);
+            navigator.geolocation.getCurrentPosition(p => {
+                document.getElementById('lokasi').value = p.coords.latitude + "," + p.coords.longitude;
+                statusLokasi.innerHTML = "📍 GPS Terkunci: " + p.coords.latitude.toFixed(4) + ", " + p.coords.longitude.toFixed(4);
+                statusLokasi.className = "text-xs text-green-600 mb-4 font-bold";
+            });
+            btnAbsen.onclick = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                document.getElementById('foto').value = canvas.toDataURL('image/jpeg');
+                document.getElementById('form_absen').submit();
+            };
+        }
+    </script>
+    
     <style>
         @media print {
-            nav, button, form { display: none !important; }
+            nav, button, form, .bg-gradient-to-br, #modalShift { display: none !important; }
             body { background-color: white !important; }
             .shadow-sm, .shadow-md { box-shadow: none !important; }
         }

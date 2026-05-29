@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Models\AbsensiModel;
 use App\Models\CutiModel;
-use App\Models\PengumumanModel; // <-- Integrasi Model Pengumuman Baru
+use App\Models\PengumumanModel;
 
 class Dashboard extends BaseController
 {
@@ -24,47 +24,51 @@ class Dashboard extends BaseController
             'role'     => $role
         ];
 
-        $karyawanModel = new \App\Models\KaryawanModel();
-        $pengumumanModel = new PengumumanModel(); // <-- Inisialisasi Model Pengumuman
-
-        // Ambil daftar divisi unik untuk dropdown dinamis di HRD dan Admin
-        $default_divisi = ['IT / Fasilitas', 'HRD & Legal', 'Produksi', 'Pemasaran & Sales', 'Keuangan & Tax', 'Logistik & Gudang'];
-        $db_divisi = $karyawanModel->select('divisi')->distinct()->findAll();
-        $divisi_list = array_column($db_divisi, 'divisi');
-        $data['daftar_divisi'] = array_unique(array_merge($default_divisi, $divisi_list));
+        // Inisialisasi semua Model di atas agar tidak berulang-ulang
+        $karyawanModel   = new \App\Models\KaryawanModel();
+        $pengumumanModel = new PengumumanModel(); 
+        $absensiModel    = new AbsensiModel();
+        $cutiModel       = new CutiModel();
+        
+        $hari_ini  = date('Y-m-d');
+        $bulan_ini = date('Y-m');
 
         // ==========================================
-        // DASHBOARD KARYAWAN
+        // 1. DATA DIVISI DINAMIS (Hanya untuk Admin & HRD)
         // ==========================================
-        if ($role == 'Karyawan') {
-            $absensiModel = new AbsensiModel();
-            $cutiModel = new CutiModel();
-            $hari_ini = date('Y-m-d');
+        if (in_array($role, ['Admin', 'HRD'])) {
+            $default_divisi = ['IT / Fasilitas', 'HRD & Legal', 'Produksi', 'Pemasaran & Sales', 'Keuangan & Tax', 'Logistik & Gudang'];
+            $db_divisi = $karyawanModel->select('divisi')->distinct()->findAll();
+            $divisi_list = array_column($db_divisi, 'divisi');
+            $data['daftar_divisi'] = array_unique(array_merge($default_divisi, $divisi_list));
+        }
 
+        // ==========================================
+        // 2. LOGIKA ABSENSI MANDIRI (100% IDENTIK UNTUK KARYAWAN, HRD, & PIMPINAN)
+        // ==========================================
+        if (in_array($role, ['Karyawan', 'HRD', 'Pimpinan'])) {
+            // Data Absen Hari Ini
             $data['absen_hari_ini'] = $absensiModel->where('id_karyawan', $id_karyawan)->where('tanggal', $hari_ini)->first();
             
+            // Data Sisa Cuti Pribadi
             $total_cuti = $cutiModel->selectSum('lama_cuti')->where('id_karyawan', $id_karyawan)->whereIn('status', ['Pending', 'Diterima'])->first();
-            $jatah_awal = 12;
-            $data['sisa_cuti'] = $jatah_awal - ($total_cuti['lama_cuti'] ?? 0);
+            $data['sisa_cuti'] = 12 - ($total_cuti['lama_cuti'] ?? 0);
 
+            // Data Riwayat Absen & Cuti Pribadi
             $data['riwayat_absen'] = $absensiModel->where('id_karyawan', $id_karyawan)->orderBy('tanggal', 'DESC')->limit(5)->findAll();
-            $data['riwayat_cuti'] = $cutiModel->where('id_karyawan', $id_karyawan)->orderBy('id_cuti', 'DESC')->findAll();
-
-            // AMBIL DATA PENGUMUMAN TERBARU UNTUK DISPLAY BANNER KARYAWAN
+            $data['riwayat_cuti']  = $cutiModel->where('id_karyawan', $id_karyawan)->orderBy('id_cuti', 'DESC')->findAll();
+            
+            // Pengumuman Global
             $data['pengumuman_terbaru'] = $pengumumanModel->orderBy('tanggal_posting', 'DESC')->first();
+        }
 
+        // ==========================================
+        // 3. DISTRIBUSI KE HALAMAN MASING-MASING
+        // ==========================================
+        if ($role == 'Karyawan') {
             return view('dashboard/karyawan', $data);
             
-        // ==========================================
-        // DASHBOARD HRD
-        // ==========================================
         } elseif ($role == 'HRD') {
-            $absensiModel  = new AbsensiModel();
-            $cutiModel     = new CutiModel();
-            
-            $hari_ini  = date('Y-m-d');
-            $bulan_ini = date('Y-m'); 
-            
             $data['daftar_absensi'] = $absensiModel->select('absensi.*, karyawan.nama, karyawan.nik')
                                             ->join('karyawan', 'karyawan.id_karyawan = absensi.id_karyawan')
                                             ->where('tanggal', $hari_ini)->findAll();
@@ -73,7 +77,6 @@ class Dashboard extends BaseController
                                         ->join('karyawan', 'karyawan.id_karyawan = cuti.id_karyawan')
                                         ->where('status', 'Pending')->findAll();
 
-            // SINKRONISASI: Menarik semua akun operasional yang bukan Admin agar divisi kustom tampil
             $semua_karyawan = $karyawanModel->where('divisi !=', 'Admin')->where('status_aktif', 1)->findAll();
             $peringatan_dini = [];
             $statistik_karyawan = [];
@@ -84,9 +87,8 @@ class Dashboard extends BaseController
                 $kpi = round(($hadir_bulan_ini / 22) * 100);
                 
                 $cuti_terpakai = $cutiModel->selectSum('lama_cuti')->where('id_karyawan', $k['id_karyawan'])->whereIn('status', ['Pending', 'Diterima'])->first();
-                $sisa_cuti = 12 - ($cuti_terpakai['lama_cuti'] ?? 0);
+                $sisa_cuti_hrd = 12 - ($cuti_terpakai['lama_cuti'] ?? 0);
 
-                // Kelengkapan array data untuk disalurkan ke parameter JavaScript modal edit hrd
                 $statistik_karyawan[] = [
                     'id_karyawan'     => $k['id_karyawan'],
                     'nik'             => $k['nik'],
@@ -96,7 +98,7 @@ class Dashboard extends BaseController
                     'jam_masuk_shift' => $k['jam_masuk_shift'],
                     'hadir'           => $hadir_bulan_ini,
                     'kpi'             => $kpi > 100 ? 100 : $kpi,
-                    'sisa_cuti'       => $sisa_cuti
+                    'sisa_cuti'       => $sisa_cuti_hrd
                 ];
 
                 $tiga_hari_lalu = date('Y-m-d', strtotime('-3 days'));
@@ -111,21 +113,11 @@ class Dashboard extends BaseController
             $data['statistik_karyawan'] = $statistik_karyawan;
             $data['peringatan_dini'] = $peringatan_dini;
 
-            // AMBIL DATA PENGUMUMAN TERBARU UNTUK PREVIEW KOTAK FORM HRD
-            $data['pengumuman_terbaru'] = $pengumumanModel->orderBy('tanggal_posting', 'DESC')->first();
-
             return view('dashboard/hrd', $data);
 
-        // ==========================================
-        // DASHBOARD PIMPINAN
-        // ==========================================
         } elseif ($role == 'Pimpinan') {
-            $absensiModel  = new AbsensiModel();
-            $cutiModel     = new CutiModel();
-            
-            $tanggal_filter = $this->request->getGet('tanggal') ?? date('Y-m-d');
+            $tanggal_filter = $this->request->getGet('tanggal') ?? $hari_ini;
 
-            // SINKRONISASI: Hitung dan tampilkan total akun operasional yang bukan Admin
             $data['total_karyawan'] = $karyawanModel->where('divisi !=', 'Admin')->where('status_aktif', 1)->countAllResults();
             $data['hadir_hari_ini'] = $absensiModel->where('tanggal', $tanggal_filter)->countAllResults();
             $data['cuti_hari_ini']  = $cutiModel->where('status', 'Diterima')
@@ -138,21 +130,13 @@ class Dashboard extends BaseController
             
             $data['daftar_karyawan'] = $karyawanModel->where('divisi !=', 'Admin')->where('status_aktif', 1)->findAll();
             $data['tanggal_filter'] = $tanggal_filter;
-            // Tambahkan ini agar Pimpinan bisa melihat pengumuman terakhir
-            $data['pengumuman_terbaru'] = $pengumumanModel->orderBy('tanggal_posting', 'DESC')->first();
             
             return view('dashboard/pimpinan', $data);
 
-            return view('dashboard/pimpinan', $data);
-
-        // ==========================================
-        // DASHBOARD ADMIN
-        // ==========================================
         } elseif ($role == 'Admin') {
-            $hrdModel = new \App\Models\HrdModel(); 
-
-            $data['daftar_karyawan'] = $karyawanModel->findAll();
-            $data['daftar_manajemen'] = $hrdModel->findAll();
+            // Kita filter berdasarkan role-nya!
+            $data['daftar_karyawan']  = $karyawanModel->where('role', 'Karyawan')->findAll();
+            $data['daftar_manajemen'] = $karyawanModel->whereIn('role', ['Admin', 'HRD', 'Pimpinan'])->findAll();
 
             return view('dashboard/admin', $data);
 
@@ -177,7 +161,6 @@ class Dashboard extends BaseController
         $absensiModel  = new AbsensiModel();
         $cutiModel     = new CutiModel();
 
-        // SINKRONISASI: Tarik seluruh data karyawan non-Admin untuk kalkulasi report
         $semua_karyawan = $karyawanModel->where('divisi !=', 'Admin')->findAll();
         $data_laporan = [];
 
@@ -243,7 +226,6 @@ class Dashboard extends BaseController
         $absensiModel  = new AbsensiModel();
         $cutiModel     = new CutiModel();
 
-        // SINKRONISASI: Ambil data seluruh karyawan operasional non-Admin untuk rekap excel
         $semua_karyawan = $karyawanModel->where('divisi !=', 'Admin')->findAll();
         $data_laporan = [];
 
@@ -328,14 +310,21 @@ class Dashboard extends BaseController
             'jam_pulang_shift' => $jam_pulang
         ];
 
-        // Mempertahankan password teks biasa (plain text) sesuai arsitektur pengujian lokal
+        // --- SOLUSI BUG: TANGKAP DAN UPDATE ROLE ---
+        // Jika form mengirimkan data role (seperti di Dasbor Admin), maka ikut di-update
+        $role_input = $this->request->getPost('role');
+        if (!empty($role_input)) {
+            $data_update['role'] = $role_input;
+        }
+        // -------------------------------------------
+
         $password = $this->request->getPost('password');
         if (!empty($password)) {
             $data_update['password'] = $password; 
         }
 
         $karyawanModel->update($id_karyawan, $data_update);
-        return redirect()->to('/dashboard')->with('pesan', 'Data master akun karyawan berhasil diperbarui!');
+        return redirect()->to('/dashboard')->with('pesan', 'Data master akun berhasil diperbarui secara menyeluruh!');
     }
 
     // ==========================================

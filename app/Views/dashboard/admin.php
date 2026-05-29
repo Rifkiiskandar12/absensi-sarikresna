@@ -34,7 +34,7 @@
                 <p class="text-slate-500 text-sm mt-1">Pusat kendali seluruh akun master pengguna PT Sari Kresna Kimia.</p>
             </div>
             <button onclick="document.getElementById('modalTambahAkun').classList.remove('hidden')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-indigo-700 transition flex items-center gap-2 shadow-md">
-                + Tambah Akun Karyawan
+                + Tambah Akun Baru
             </button>
         </div>
 
@@ -54,7 +54,7 @@
                         <tbody class="divide-y divide-slate-100">
                             <?php foreach($daftar_manajemen as $m): ?>
                             <tr class="hover:bg-slate-50">
-                                <td class="p-4 font-bold text-slate-700"><?= esc($m['hrd']); ?></td>
+                                <td class="p-4 font-bold text-slate-700"><?= esc($m['nama']); ?></td>
                                 <td class="p-4 text-slate-500 font-mono text-xs"><?= esc($m['username']); ?></td>
                                 <td class="p-4">
                                     <span class="px-2 py-1 rounded text-[10px] font-bold <?= $m['role'] == 'Admin' ? 'bg-indigo-100 text-indigo-700' : ($m['role'] == 'HRD' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') ?>">
@@ -62,7 +62,7 @@
                                     </span>
                                 </td>
                                 <td class="p-4 text-center">
-                                    <a href="<?= base_url('admin/reset_manajemen/' . $m['id_hrd']); ?>" onclick="return confirm('Reset password akun <?= $m['hrd'] ?> menjadi 123456?')" class="text-xs text-indigo-600 font-bold hover:underline">Reset Pass</a>
+                                    <a href="<?= base_url('admin/reset_karyawan/' . $m['id_karyawan']); ?>" onclick="return confirm('Reset password akun <?= $m['nama'] ?> menjadi 123456?')" class="text-xs text-indigo-600 font-bold hover:underline">Reset Pass</a>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -99,7 +99,7 @@
                                     </span>
                                 </td>
                                 <td class="p-4 text-center flex gap-1.5 justify-center mt-2">
-                                    <button onclick="bukaModalEdit(<?= $k['id_karyawan'] ?>, '<?= esc($k['nik']) ?>', '<?= esc($k['nama']) ?>', '<?= esc($k['divisi']) ?>', '<?= $isPagi ? 'Pagi' : 'Siang' ?>', '<?= esc($k['username']) ?>')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[10px] font-bold transition shadow-sm">Edit</button>
+                                    <button onclick="bukaModalEdit(<?= $k['id_karyawan'] ?>, '<?= esc($k['nik']) ?>', '<?= esc($k['nama']) ?>', '<?= esc($k['divisi']) ?>', '<?= $isPagi ? 'Pagi' : 'Siang' ?>', '<?= esc($k['username']) ?>', '<?= esc($k['role']) ?>')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[10px] font-bold transition shadow-sm">Edit</button>
                                     
                                     <a href="<?= base_url('admin/reset_karyawan/' . $k['id_karyawan']); ?>" onclick="return confirm('Reset password karyawan ini menjadi 123456?')" class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-slate-200 transition">Reset Pass</a>
                                     
@@ -121,16 +121,29 @@
     <div id="modalTambahAkun" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden relative">
             <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-indigo-50">
-                <h3 class="font-bold text-lg text-indigo-800">Tambah Karyawan Baru</h3>
+                <h3 class="font-bold text-lg text-indigo-800">Tambah Akun Baru</h3>
                 <button onclick="document.getElementById('modalTambahAkun').classList.add('hidden')" class="text-slate-400 hover:text-red-500 transition focus:outline-none font-bold text-lg leading-none">×</button>
             </div>
             
             <form action="<?= base_url('admin/simpan_karyawan') ?>" method="POST" class="p-6">
                 <?= csrf_field() ?>
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Nomor Induk Karyawan (NIK)</label>
-                    <input type="text" name="nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="KRY-005" required>
+                
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
+                        <input type="text" name="nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="KRY-005" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Hak Akses (Role)</label>
+                        <select name="role" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm font-bold text-indigo-600">
+                            <option value="Karyawan">Karyawan</option>
+                            <option value="HRD">HRD</option>
+                            <option value="Pimpinan">Pimpinan</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
                     <input type="text" name="nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Masukkan nama..." required>
@@ -158,13 +171,15 @@
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Username Login</label>
-                    <input type="text" name="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Password Sementara</label>
-                    <input type="password" name="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Username</label>
+                        <input type="text" name="username" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Password Awal</label>
+                        <input type="password" name="password" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                    </div>
                 </div>
                 
                 <div class="flex gap-2">
@@ -178,20 +193,34 @@
     <div id="modalEdit" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden relative">
             <div class="bg-amber-500 p-4 flex justify-between items-center">
-                <h3 class="font-black text-slate-900">✏️ Edit Data Karyawan</h3>
+                <h3 class="font-black text-slate-900">✏️ Edit Data Akun</h3>
                 <button onclick="tutupModalEdit()" class="text-slate-900 hover:text-white font-bold text-lg leading-none">×</button>
             </div>
             <form action="<?= base_url('dashboard/update_karyawan') ?>" method="POST" class="p-6">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
-                    <input type="text" name="nik" id="edit_nik" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50" required>
+                
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
+                        <input type="text" name="nik" id="edit_nik" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Hak Akses (Role)</label>
+                        <select name="role" id="edit_role" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-sm font-bold text-amber-600">
+                            <option value="Karyawan">Karyawan</option>
+                            <option value="HRD">HRD</option>
+                            <option value="Pimpinan">Pimpinan</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
                     <input type="text" name="nama" id="edit_nama" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" required>
                 </div>
+                
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Divisi / Departemen</label>
                     <select name="divisi" id="edit_divisi" onchange="checkDivisiKustom(this, 'box_divisi_edit', 'input_divisi_edit')" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-semibold text-slate-700" required>
@@ -204,6 +233,7 @@
                 <div class="mb-3 hidden" id="box_divisi_edit">
                     <input type="text" name="divisi_baru" id="input_divisi_edit" class="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm" placeholder="Ketik nama divisi baru...">
                 </div>
+
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Jadwal Shift Operasional</label>
                     <select name="shift" id="edit_shift" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white font-semibold text-slate-700">
@@ -211,6 +241,7 @@
                         <option value="Siang">🌆 Shift Siang (13:00 - 21:00)</option>
                     </select>
                 </div>
+
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Username Login</label>
                     <input type="text" name="username" id="edit_username" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50" required>
@@ -233,15 +264,17 @@
             if (selectElement.value === 'NEW_DIVISION') { box.classList.remove('hidden'); input.required = true; input.focus(); } 
             else { box.classList.add('hidden'); input.required = false; input.value = ''; }
         }
-        function bukaModalEdit(id, nik, nama, divisi, shift, username) {
+        
+        // Perbaikan pada JS untuk menerima parameter 'role'
+        function bukaModalEdit(id, nik, nama, divisi, shift, username, role) {
             document.getElementById('edit_id_karyawan').value = id; 
             document.getElementById('edit_nik').value = nik; 
             document.getElementById('edit_nama').value = nama;
             document.getElementById('edit_divisi').value = divisi; 
             document.getElementById('edit_shift').value = shift; 
             document.getElementById('edit_username').value = username;
+            document.getElementById('edit_role').value = role;
             
-            // Trigger perubahan untuk memastikan kotak custom division tertutup jika tidak dipilih
             document.getElementById('edit_divisi').dispatchEvent(new Event('change'));
             document.getElementById('modalEdit').classList.remove('hidden');
         }
