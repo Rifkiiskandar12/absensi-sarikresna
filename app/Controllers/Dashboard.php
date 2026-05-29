@@ -95,6 +95,7 @@ class Dashboard extends BaseController
                     'nama'            => $k['nama'],
                     'username'        => $k['username'],
                     'divisi'          => $k['divisi'],
+                    'role'            => $k['role'],
                     'jam_masuk_shift' => $k['jam_masuk_shift'],
                     'hadir'           => $hadir_bulan_ini,
                     'kpi'             => $kpi > 100 ? 100 : $kpi,

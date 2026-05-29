@@ -18,9 +18,6 @@
 
     <div class="max-w-7xl mx-auto p-6 mt-6">
         
-        <!-- ========================================== -->
-        <!-- WIDGET ABSENSI MANDIRI (SAMA 100% DGN KARYAWAN) -->
-        <!-- ========================================== -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-blue-600 mb-8 max-w-2xl">
             <?php if (!$absen_hari_ini): ?>
                 <h2 class="font-bold text-lg mb-4">📸 Absen Masuk (Mandiri HRD)</h2>
@@ -99,9 +96,20 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-blue-600 mb-6">
-                    <h2 class="font-bold text-xl text-slate-800 mb-4">Tambah Karyawan Baru</h2>
-                    <form action="<?= base_url('hrd/simpan_karyawan') ?>" method="POST">
+                    <h2 class="font-bold text-xl text-slate-800 mb-4">Tambah Akun Baru</h2>
+                    
+                    <form action="<?= base_url('admin/simpan_karyawan') ?>" method="POST">
                         <?= csrf_field() ?>
+                        
+                        <div class="mb-3">
+                            <select name="role" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-blue-50 font-bold text-blue-700" required>
+                                <option value="Karyawan">Hak Akses: Karyawan</option>
+                                <option value="HRD">Hak Akses: HRD</option>
+                                <option value="Pimpinan">Hak Akses: Pimpinan</option>
+                                <option value="Admin">Hak Akses: Admin</option>
+                            </select>
+                        </div>
+
                         <div class="mb-3"><input type="text" name="nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="NIK (Contoh: KRY-004)" required></div>
                         <div class="mb-3"><input type="text" name="nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Nama Lengkap" required></div>
                         
@@ -141,18 +149,19 @@
                         <?php else: ?>
                             <?php foreach($statistik_karyawan as $k): 
                                 $isPagi = ($k['jam_masuk_shift'] == '08:00:00');
+                                $role_karyawan = $k['role'] ?? 'Karyawan'; // Menghindari error jika array role belum ditambahkan
                             ?>
                             <div class="border-b border-slate-100 pb-3 last:border-0 last:pb-0 flex justify-between items-start">
                                 <div class="flex-1">
                                     <div class="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                                        <span><?= esc($k['nama']) ?></span>
+                                        <span><?= esc($k['nama']) ?> <span class="text-[9px] bg-slate-200 text-slate-600 px-1 rounded"><?= esc($role_karyawan) ?></span></span>
                                         <span class="text-xs text-slate-400 font-normal"><?= esc($k['divisi']) ?></span>
                                     </div>
                                     <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
                                         <span>KPI: <?= $k['kpi'] ?>% | Cuti: <span class="<?= $k['sisa_cuti'] <= 2 ? 'text-red-500' : 'text-blue-600' ?>"><?= $k['sisa_cuti'] ?></span></span>
                                     </div>
                                 </div>
-                                <button onclick="bukaModalEdit(<?= $k['id_karyawan'] ?>, '<?= esc($k['nik']) ?>', '<?= esc($k['nama']) ?>', '<?= esc($k['divisi']) ?>', '<?= $isPagi ? 'Pagi' : 'Siang' ?>', '<?= esc($k['username']) ?>')" class="ml-2 text-[10px] bg-slate-100 hover:bg-amber-100 text-amber-700 font-bold px-2 py-1.5 rounded border border-slate-200 transition">✏️ Edit</button>
+                                <button onclick="bukaModalEdit(<?= $k['id_karyawan'] ?>, '<?= esc($k['nik']) ?>', '<?= esc($k['nama']) ?>', '<?= esc($k['divisi']) ?>', '<?= $isPagi ? 'Pagi' : 'Siang' ?>', '<?= esc($k['username']) ?>', '<?= esc($role_karyawan) ?>')" class="ml-2 text-[10px] bg-slate-100 hover:bg-amber-100 text-amber-700 font-bold px-2 py-1.5 rounded border border-slate-200 transition">✏️ Edit</button>
                             </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -246,20 +255,32 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT KARYAWAN -->
     <div id="modalEdit" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden relative">
             <div class="bg-amber-500 p-4 flex justify-between items-center">
-                <h3 class="font-black text-slate-900">✏️ Edit Data Karyawan</h3>
+                <h3 class="font-black text-slate-900">✏️ Edit Data Akun</h3>
                 <button onclick="tutupModalEdit()" class="text-slate-900 hover:text-white font-bold text-lg leading-none">×</button>
             </div>
             <form action="<?= base_url('dashboard/update_karyawan') ?>" method="POST" class="p-6">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id_karyawan" id="edit_id_karyawan">
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
-                    <input type="text" name="nik" id="edit_nik" class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50" required>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">NIK</label>
+                        <input type="text" name="nik" id="edit_nik" class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Hak Akses (Role)</label>
+                        <select name="role" id="edit_role" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-bold text-amber-600" required>
+                            <option value="Karyawan">Karyawan</option>
+                            <option value="HRD">HRD</option>
+                            <option value="Pimpinan">Pimpinan</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
                 </div>
+                
                 <div class="mb-3">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
                     <input type="text" name="nama" id="edit_nama" class="w-full px-3 py-2 border rounded-lg text-sm" required>
@@ -305,7 +326,7 @@
             if (selectElement.value === 'NEW_DIVISION') { box.classList.remove('hidden'); input.required = true; input.focus(); } 
             else { box.classList.add('hidden'); input.required = false; input.value = ''; }
         }
-        function bukaModalEdit(id, nik, nama, divisi, shift, username) {
+        function bukaModalEdit(id, nik, nama, divisi, shift, username, role) {
             document.getElementById('edit_id_karyawan').value = id; 
             document.getElementById('edit_nik').value = nik; 
             document.getElementById('edit_nama').value = nama;
@@ -313,15 +334,15 @@
             document.getElementById('edit_shift').value = shift; 
             document.getElementById('edit_username').value = username;
             
+            // Masukkan role ke dropdown Edit
+            document.getElementById('edit_role').value = role;
+            
             document.getElementById('edit_divisi').dispatchEvent(new Event('change'));
             document.getElementById('modalEdit').classList.remove('hidden');
         }
         function tutupModalEdit() { document.getElementById('modalEdit').classList.add('hidden'); }
     </script>
     
-    <!-- ========================================== -->
-    <!-- SCRIPT KAMERA & GPS (SAMA 100% DGN KARYAWAN) -->
-    <!-- ========================================== -->
     <script>
         const btnAbsen = document.getElementById('btn_absen');
         if (btnAbsen) {
